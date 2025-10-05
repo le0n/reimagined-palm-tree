@@ -7,14 +7,17 @@ import { FiltersPanel } from '@/components/FiltersPanel';
 import { Map } from '@/components/Map';
 import { PlaceCard } from '@/components/PlaceCard';
 import { SuggestionDrawer } from '@/components/SuggestionDrawer';
-import { useDateDashStore } from '@/lib/store';
 import { applyFilters } from '@/lib/places/utils';
+import { useDateDashStore } from '@/lib/store';
 import type { Filters, Place } from '@/lib/places/types';
 
 const FALLBACK_CENTER = { lat: 40.7128, lng: -74.006 }; // Downtown NYC fallback
+const MAP_HEIGHT_CLASS = 'h-[calc(100vh_-_5rem)]';
 
 export default function ExplorePage() {
   const initialized = useRef(false);
+  const filterButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -74,11 +77,36 @@ export default function ExplorePage() {
     setMode('weighted');
   }, [filters.center, loadPlaces, refreshSuggestion, setCenter, setMode]);
 
+  const suggestionPlaceId = suggestion?.place?.id ?? null;
+
   useEffect(() => {
-    if (suggestion?.place) {
-      setSelectedPlaceId(suggestion.place.id);
+    if (suggestionPlaceId) {
+      setSelectedPlaceId(suggestionPlaceId);
     }
-  }, [suggestion?.place?.id]);
+  }, [suggestionPlaceId]);
+
+  const handleFiltersChange = (update: Partial<Filters>) => {
+    setFilters(update);
+  };
+
+  const closeFilters = () => {
+    setFiltersOpen(false);
+    filterButtonRef.current?.focus();
+  };
+
+  useEffect(() => {
+    if (!filtersOpen) {
+      return;
+    }
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeFilters();
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [filtersOpen]);
 
   const filteredEvaluations = useMemo(() => applyFilters(places, filters), [places, filters]);
   const filteredPlaces: Place[] = useMemo(
@@ -115,13 +143,10 @@ export default function ExplorePage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [places]);
 
-  const handleFiltersChange = (update: Partial<Filters>) => {
-    setFilters(update);
-  };
-
   const handleApply = async () => {
     setMode('weighted');
     await refreshSuggestion('weighted');
+    closeFilters();
   };
 
   const handleReset = async () => {
@@ -129,11 +154,13 @@ export default function ExplorePage() {
     setMode('weighted');
     await refreshSuggestion('weighted');
     setSelectedPlaceId(null);
+    closeFilters();
   };
 
   const handleSurprise = async () => {
     setMode('random');
     await refreshSuggestion('random');
+    closeFilters();
   };
 
   const handleAnotherIdea = async () => {
@@ -148,44 +175,85 @@ export default function ExplorePage() {
   }, [activePlace, filteredEvaluations]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="flex flex-col gap-6">
-        <FiltersPanel
-          filters={filters}
-          availableCuisines={availableCuisines}
-          availableThemes={availableThemes}
-          mode={mode}
-          loading={loading}
-          onFiltersChange={handleFiltersChange}
-          onApply={handleApply}
-          onReset={handleReset}
-          onSurprise={handleSurprise}
-          onModeChange={setMode}
-        />
+    <div className="relative h-full min-h-[calc(100vh_-_5rem)] w-full">
+      <Map
+        center={filters.center ?? FALLBACK_CENTER}
+        places={filteredPlaces}
+        selectedPlaceId={selectedPlaceId}
+        onSelectPlace={setSelectedPlaceId}
+        onError={setMapError}
+        className="h-full w-full"
+        mapClassName={`${MAP_HEIGHT_CLASS} w-full rounded-none border-0`}
+      />
 
-        {error ? (
-          <div className="alert alert-error">
-            <span>{error}</span>
-          </div>
+      <div className="pointer-events-none absolute inset-0">
+        <div className="pointer-events-auto absolute left-4 top-4 z-40 flex flex-col gap-3">
+          <button
+            ref={filterButtonRef}
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setFiltersOpen((value) => !value)}
+            aria-expanded={filtersOpen}
+            aria-controls="filters-panel"
+          >
+            {filtersOpen ? 'Hide filters' : 'Show filters'}
+          </button>
+          {filtersOpen ? (
+            <div
+              id="filters-panel"
+              className="w-[min(90vw,22rem)]"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <FiltersPanel
+                filters={filters}
+                availableCuisines={availableCuisines}
+                availableThemes={availableThemes}
+                mode={mode}
+                loading={loading}
+                onFiltersChange={handleFiltersChange}
+                onApply={handleApply}
+                onReset={handleReset}
+                onSurprise={handleSurprise}
+                onModeChange={setMode}
+                onClose={closeFilters}
+              />
+            </div>
+          ) : null}
+        </div>
+
+        {filtersOpen ? (
+          <button
+            type="button"
+            aria-label="Close filters"
+            className="pointer-events-auto fixed inset-0 z-30 bg-base-100/20 backdrop-blur-sm"
+            onClick={closeFilters}
+          />
         ) : null}
 
-        <Map
-          center={filters.center ?? FALLBACK_CENTER}
-          places={filteredPlaces}
-          selectedPlaceId={selectedPlaceId}
-          onSelectPlace={setSelectedPlaceId}
-          onError={setMapError}
-        />
+        <div className="pointer-events-auto absolute right-4 top-4 z-30 max-w-sm">
+          {error ? (
+            <div className="alert alert-error shadow-lg">
+              <span>{error}</span>
+            </div>
+          ) : null}
+          {mapError ? (
+            <div className="alert alert-warning mt-2 shadow-lg">
+              <span>{mapError}</span>
+            </div>
+          ) : null}
+        </div>
 
-        {mapError ? (
-          <div className="alert alert-warning">
-            <span>{mapError}</span>
-          </div>
-        ) : null}
+        <div className="pointer-events-auto absolute bottom-4 right-4 z-30 w-[min(90vw,24rem)]">
+          <SuggestionDrawer
+            suggestion={suggestion}
+            loading={loading}
+            onAnotherIdea={handleAnotherIdea}
+            onResetFilters={handleReset}
+          />
+        </div>
 
         {activePlace ? (
-          <div>
-            <h2 className="mb-3 text-xl font-semibold">Highlighted spot</h2>
+          <div className="pointer-events-auto absolute bottom-4 left-4 z-30 w-[min(90vw,24rem)]">
             <PlaceCard
               place={activePlace}
               distanceKm={activeEvaluation?.distanceKm ?? undefined}
@@ -194,13 +262,6 @@ export default function ExplorePage() {
           </div>
         ) : null}
       </div>
-
-      <SuggestionDrawer
-        suggestion={suggestion}
-        loading={loading}
-        onAnotherIdea={handleAnotherIdea}
-        onResetFilters={handleReset}
-      />
     </div>
   );
 }

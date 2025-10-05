@@ -11,13 +11,19 @@ interface SuggestionDrawerProps {
   loading?: boolean;
   onAnotherIdea: () => void;
   onResetFilters: () => void;
+  className?: string;
+}
+
+function joinClasses(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
 }
 
 export function SuggestionDrawer({
   suggestion,
   loading = false,
   onAnotherIdea,
-  onResetFilters
+  onResetFilters,
+  className
 }: SuggestionDrawerProps) {
   const place = suggestion?.place ?? null;
 
@@ -30,7 +36,7 @@ export function SuggestionDrawer({
   }, [place]);
 
   return (
-    <aside className="lg:sticky lg:top-6">
+    <aside className={joinClasses('w-full', className)}>
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body gap-4">
           <header className="flex flex-col gap-2">
@@ -72,11 +78,7 @@ export function SuggestionDrawer({
           ) : null}
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              className="btn btn-outline flex-1"
-              onClick={onResetFilters}
-            >
+            <button type="button" className="btn btn-outline flex-1" onClick={onResetFilters}>
               Widen filters
             </button>
             <button
@@ -90,12 +92,7 @@ export function SuggestionDrawer({
           </div>
 
           {place && mapsHref ? (
-            <a
-              href={mapsHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary"
-            >
+            <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
               Take me there
             </a>
           ) : null}

@@ -17,8 +17,10 @@ interface MapProps {
   center: LatLng;
   places: Place[];
   selectedPlaceId: string | null;
-  onSelectPlace?: (placeId: string) => void;
-  onError?: (message: string | null) => void;
+  onSelectPlace?: (_placeId: string) => void;
+  onError?: (_message: string | null) => void;
+  className?: string;
+  mapClassName?: string;
 }
 
 interface GeoJsonFeatureProperties {
@@ -33,6 +35,10 @@ const CLUSTER_LAYER_ID = 'datedash-clusters';
 const CLUSTER_COUNT_LAYER_ID = 'datedash-cluster-count';
 const UNCLUSTERED_LAYER_ID = 'datedash-unclustered';
 const SELECTED_LAYER_ID = 'datedash-selected';
+
+function joinClasses(...classes: Array<string | null | undefined | false>) {
+  return classes.filter(Boolean).join(' ');
+}
 
 function toGeoJson(places: Place[]) {
   return {
@@ -51,10 +57,19 @@ function toGeoJson(places: Place[]) {
   };
 }
 
-export function Map({ center, places, selectedPlaceId, onSelectPlace, onError }: MapProps) {
+export function Map({
+  center,
+  places,
+  selectedPlaceId,
+  onSelectPlace,
+  onError,
+  className,
+  mapClassName
+}: MapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const [hasError, setHasError] = useState(false);
+  const [showEmptyAlert, setShowEmptyAlert] = useState(false);
 
   const safeCenter = useMemo<LatLng>(() => center ?? FALLBACK_CENTER, [center]);
 
@@ -94,7 +109,7 @@ export function Map({ center, places, selectedPlaceId, onSelectPlace, onError }:
       map.on('load', () => {
         map.addSource(SOURCE_ID, {
           type: 'geojson',
-          data: toGeoJson(places),
+          data: toGeoJson([]),
           cluster: true,
           clusterMaxZoom: 14,
           clusterRadius: 60
@@ -245,6 +260,10 @@ export function Map({ center, places, selectedPlaceId, onSelectPlace, onError }:
   }, [places]);
 
   useEffect(() => {
+    setShowEmptyAlert(places.length === 0);
+  }, [places]);
+
+  useEffect(() => {
     const map = mapRef.current;
     if (!map) {
       return;
@@ -272,20 +291,27 @@ export function Map({ center, places, selectedPlaceId, onSelectPlace, onError }:
   }
 
   return (
-    <div className="relative">
+    <div className={joinClasses('relative', className)}>
       <div
         ref={containerRef}
-        className="h-[420px] w-full overflow-hidden rounded-2xl border border-base-300"
+        className={joinClasses('w-full overflow-hidden', mapClassName ?? 'h-[420px] rounded-2xl border border-base-300')}
         role="presentation"
         aria-label="Map showing filtered date locations"
       />
-      {!places.length ? (
-        <div className="absolute inset-0 m-4 flex items-center justify-center rounded-xl bg-base-100/90 text-center">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">No matches yet</h3>
-            <p className="text-sm text-base-content/70">
-              Try widening your radius, lowering the minimum rating, or toggling off open-now to see more spots.
-            </p>
+      {showEmptyAlert ? (
+        <div className="pointer-events-auto absolute left-1/2 top-4 z-30 w-[min(360px,90vw)] -translate-x-1/2">
+          <div className="alert alert-error shadow-lg flex items-start gap-3">
+            <span className="text-sm">
+              No matches yet. Try widening your radius, lowering the rating, or toggling off open-now.
+            </span>
+            <button
+              type="button"
+              className="btn btn-xs btn-circle btn-ghost"
+              onClick={() => setShowEmptyAlert(false)}
+              aria-label="Dismiss no results message"
+            >
+              ✕
+            </button>
           </div>
         </div>
       ) : null}

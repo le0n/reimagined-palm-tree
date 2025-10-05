@@ -36,10 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-theme={DEFAULT_THEME} suppressHydrationWarning>
       <head>
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: themeInitScript }}
-        />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-screen bg-base-100 text-base-content font-sans antialiased">
         <div className="flex min-h-screen flex-col">
@@ -53,9 +50,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Navbar />
           </header>
           <main id="main-content" className="flex-1">
-            <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-              {children}
-            </div>
+            {children}
           </main>
           <footer className="border-t border-base-200 bg-base-100 py-6 text-sm text-base-content/70">
             <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-2 px-4 sm:flex-row sm:items-center sm:px-6 lg:px-8">

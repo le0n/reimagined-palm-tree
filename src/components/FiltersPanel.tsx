@@ -2,6 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
 
 import type { Filters, PriceLevel, SuggestionMode } from '@/lib/places/types';
 
@@ -11,11 +12,12 @@ interface FiltersPanelProps {
   availableThemes: string[];
   mode: SuggestionMode;
   loading?: boolean;
-  onFiltersChange: (update: Partial<Filters>) => void;
+  onFiltersChange: (_update: Partial<Filters>) => void;
   onApply: () => void;
   onReset: () => void;
   onSurprise: () => void;
-  onModeChange?: (mode: SuggestionMode) => void;
+  onModeChange?: (_mode: SuggestionMode) => void;
+  onClose?: () => void;
 }
 
 const PRICE_LEVEL_OPTIONS: { value: PriceLevel; label: string }[] = [
@@ -37,7 +39,8 @@ export function FiltersPanel(props: FiltersPanelProps) {
     onApply,
     onReset,
     onSurprise,
-    onModeChange
+    onModeChange,
+    onClose
   } = props;
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -46,12 +49,12 @@ export function FiltersPanel(props: FiltersPanelProps) {
     return filters.minRating ? `${filters.minRating.toFixed(1)}★ & up` : 'Any rating';
   }, [filters.minRating]);
 
-  const handleCuisineChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCuisineChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const selections = Array.from(event.target.selectedOptions).map((option) => option.value);
     onFiltersChange({ cuisines: selections });
   };
 
-  const handleThemeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleThemeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const selections = Array.from(event.target.selectedOptions).map((option) => option.value);
     onFiltersChange({ themes: selections });
   };
@@ -71,10 +74,7 @@ export function FiltersPanel(props: FiltersPanelProps) {
   };
 
   return (
-    <section
-      aria-label="Filter date suggestions"
-      className="card bg-base-100 shadow-xl"
-    >
+    <section aria-label="Filter date suggestions" className="card bg-base-100 shadow-xl">
       <form
         className="card-body gap-6"
         onSubmit={(event) => {
@@ -82,11 +82,23 @@ export function FiltersPanel(props: FiltersPanelProps) {
           onApply();
         }}
       >
-        <div className="flex flex-col gap-2">
-          <h2 className="card-title text-2xl">Fine-tune the vibe</h2>
-          <p className="text-base-content/70 text-sm">
-            Set your must-haves—radius, rating, cuisine cravings, and more. Hit “Apply” to update the map or “Surprise us!” to spin the wheel.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <h2 className="card-title text-2xl">Fine-tune the vibe</h2>
+            <p className="text-base-content/70 text-sm">
+              Set your must-haves—radius, rating, cuisine cravings, and more. Hit “Apply” to update the map or “Surprise us!” to spin the wheel.
+            </p>
+          </div>
+          {onClose ? (
+            <button
+              type="button"
+              className="btn btn-circle btn-ghost btn-sm"
+              onClick={onClose}
+              aria-label="Close filters"
+            >
+              ✕
+            </button>
+          ) : null}
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -99,7 +111,7 @@ export function FiltersPanel(props: FiltersPanelProps) {
               id="filter-radius"
               type="range"
               min={1}
-              max={25}
+              max={50}
               step={1}
               value={filters.radiusKm}
               onChange={(event) => onFiltersChange({ radiusKm: Number(event.target.value) })}
@@ -251,18 +263,10 @@ export function FiltersPanel(props: FiltersPanelProps) {
 
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <div className="join join-horizontal md:col-span-2">
-            <button
-              type="submit"
-              className="btn btn-primary join-item"
-              disabled={loading}
-            >
+            <button type="submit" className="btn btn-primary join-item" disabled={loading}>
               {loading ? 'Applying…' : 'Apply filters'}
             </button>
-            <button
-              type="button"
-              className="btn btn-outline join-item"
-              onClick={onReset}
-            >
+            <button type="button" className="btn btn-outline join-item" onClick={onReset}>
               Reset
             </button>
           </div>
