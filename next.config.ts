@@ -3,11 +3,11 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
-    typedRoutes: true
+    typedRoutes: true,
   },
   eslint: {
-    dirs: ['src']
-  }
+    dirs: ['src'],
+  },
 };
 
 export default nextConfig;
