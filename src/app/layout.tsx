@@ -6,6 +6,19 @@ import '../styles/globals.css';
 import { Navbar } from '../components/Navbar';
 
 const DEFAULT_THEME = 'datedash';
+const THEME_STORAGE_KEY = 'datedash-theme';
+
+const themeInitScript = `(() => {
+  try {
+    const storedTheme = window.localStorage.getItem('${THEME_STORAGE_KEY}');
+    const theme = storedTheme === 'dark' || storedTheme === 'datedash' ? storedTheme : '${DEFAULT_THEME}';
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+  } catch (error) {
+    document.documentElement.setAttribute('data-theme', '${DEFAULT_THEME}');
+    document.documentElement.style.colorScheme = 'light';
+  }
+})();`;
 
 export const metadata: Metadata = {
   title: {
@@ -22,6 +35,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-theme={DEFAULT_THEME} suppressHydrationWarning>
+      <head>
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
+      </head>
       <body className="min-h-screen bg-base-100 text-base-content font-sans antialiased">
         <div className="flex min-h-screen flex-col">
           <a

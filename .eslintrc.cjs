@@ -12,7 +12,15 @@ module.exports = {
   },
   plugins: [],
   rules: {
-    'no-console': ['warn', { allow: ['warn', 'error'] }]
+    'no-console': ['warn', { allow: ['warn', 'error'] }],
+    'no-unused-vars': [
+      'warn',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_'
+      }
+    ]
   },
   overrides: [
     {
